@@ -148,6 +148,10 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('tab-mac').addEventListener('click', () => switchTab('mac'));
     document.getElementById('tab-ayar').addEventListener('click', () => switchTab('ayar'));
 
+    document.getElementById('p1Select').addEventListener('change', () => {
+        updateP2Select();
+    });
+
     document.getElementById('btnAddPlayer').onclick = async () => {
         const nameInput = document.getElementById('newPlayerName');
         const name = nameInput.value.trim();
@@ -211,13 +215,24 @@ function renderLeaderboard() {
 function updateSelects() {
     const p1 = document.getElementById('p1Select');
     const p2 = document.getElementById('p2Select');
-    p1.innerHTML = '<option>Oyuncu 1</option>';
-    p2.innerHTML = '<option>Oyuncu 2</option>';
+    p1.innerHTML = '<option value="">Oyuncu 1</option>';
+    p2.innerHTML = '<option value="">Oyuncu 2</option>';
     players.forEach(p => {
         let opt = `<option value="${p.id}">${p.name}</option>`;
         p1.innerHTML += opt; p2.innerHTML += opt;
     });
     document.getElementById('playerCount').innerText = players.length;
+}
+
+function updateP2Select() {
+    const p1Id = parseInt(document.getElementById('p1Select').value);
+    const p2 = document.getElementById('p2Select');
+    p2.innerHTML = '<option value="">Oyuncu 2</option>';
+    players.forEach(p => {
+        if (p.id !== p1Id) {
+            p2.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+        }
+    });
 }
 
 function renderPlayerList() {
