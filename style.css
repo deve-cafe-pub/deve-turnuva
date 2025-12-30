@@ -420,6 +420,22 @@ h2, h3 {
         font-size: 14px;
     }
     
+    table {
+        font-size: 12px;
+    }
+    
+    th, td {
+        padding: 6px 2px;
+        font-size: 11px;
+    }
+    
+    th:nth-child(2), td:nth-child(2) {
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
     .container {
         margin: 0;
         border-radius: 0;
