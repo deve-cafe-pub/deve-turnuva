@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏆 DeVe Modern Tavla Turnuvası - İstatistikler</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loading">⏳ Yükleniyor...</div>
+
+<div class="container">
+    <div class="header">
+        <h1 id="playerTitle">
+            <div class="logo"><img src="logo.png" alt="DeVe Logo"></div>
+            DeVe Modern Tavla Turnuvası
+        </h1>
+        <button onclick="window.close()" class="btn" style="margin: 10px;">🔙 Kapat</button>
+    </div>
+
+    <div class="tab-content active" style="padding: 40px;">
+        <div id="playerInfo" style="text-align: center; margin-bottom: 30px; background: #FFF8DC; padding: 15px; border-radius: 15px;">
+            <h2 id="playerName">-</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 15px;">
+                <div style="padding: 8px;"><strong>Toplam Maç:</strong><br><span id="totalMatches">0</span></div>
+                <div style="padding: 8px;"><strong>Puan:</strong><br><span id="playerPoints">0</span></div>
+                <div style="padding: 8px;"><strong>Galibiyet:</strong><br><span id="playerWins">0</span></div>
+                <div style="padding: 8px;"><strong>Ort. Süre:</strong><br><span id="avgTime">0dk</span></div>
+            </div>
+        </div>
+
+        <div style="max-width: 900px; margin: 0 auto;">
+            <h3 style="color: #8B4513; margin-bottom: 15px;">🎲 Maç Geçmişi</h3>
+            <table id="playerMatchTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #8B4513; color: white;">
+                        <th style="padding: 12px; text-align: left;">Rakip</th>
+                        <th style="padding: 12px; text-align: center;">Skor</th>
+                        <th style="padding: 12px; text-align: center;">Dakika</th>
+                        <th style="padding: 12px; text-align: center;">Sonuç</th>
+                    </tr>
+                </thead>
+                <tbody id="playerMatchBody">
+                </tbody>
+            </table>
+            
+            <div id="upcomingMatches" style="margin-top: 30px;">
+                <h4 style="color: #8B4513; margin-bottom: 10px;">🎲 Maç Yapacağı Kişiler:</h4>
+                <div id="upcomingList" style="background: #FFF8DC; padding: 15px; border-radius: 8px; border-left: 4px solid #D2691E;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBWtAjBA2cBNZdMnR9s88uyV6h61RFMmw0",
+    authDomain: "deve-3b098.firebaseapp.com",
+    databaseURL: "https://deve-3b098-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "deve-3b098",
+    storageBucket: "deve-3b098.firebasestorage.app",
+    messagingSenderId: "709312232350",
+    appId: "1:709312232350:web:0428b59946fa7ca102348f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+let players = [];
+let matches = [];
+const dbRef = ref(db, 'turnuva');
+
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('player');
+
+if (!playerName) {
+    document.body.innerHTML = '<div style="text-align:center; margin-top:100px;"><h2>Oyuncu seçilmedi!</h2><button onclick="window.close()">Kapat</button></div>';
+}
+
+document.getElementById('loading').style.display = 'block';
+
+onValue(dbRef, (snapshot) => {
+    document.getElementById('loading').style.display = 'none';
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        players = data.players || [];
+        matches = data.matches || [];
+        showPlayerStats(playerName);
+    }
+});
+
+function showPlayerStats(playerName) {
+    const player = players.find(p => p.name === playerName);
+    if (!player) {
+        document.body.innerHTML = '<div style="text-align:center; margin-top:100px;"><h2>Oyuncu bulunamadı!</h2><button onclick="window.close()">Kapat</button></div>';
+        return;
+    }
+    
+    document.getElementById('playerTitle').innerHTML = `
+        <div class="logo"><img src="logo.png" alt="DeVe Logo"></div>
+        ${playerName} - DeVe Tavla İstatistikleri
+    `;
+    document.getElementById('playerName').textContent = `🏃‍♂️ ${playerName}`;
+    document.getElementById('totalMatches').textContent = player.played;
+    document.getElementById('playerPoints').textContent = player.points;
+    document.getElementById('playerWins').textContent = player.wins;
+    document.getElementById('avgTime').textContent = player.played > 0 ? (player.totalTime / player.played).toFixed(1) + 'dk' : '0dk';
+    
+    const tbody = document.getElementById('playerMatchBody');
+    tbody.innerHTML = '';
+    
+    const playerMatches = getPlayerMatches(playerName);
+    
+    if (playerMatches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">Henüz maç yok</td></tr>';
+    } else {
+        playerMatches.forEach(match => {
+            const result = match.winner === playerName ? '🏆 Kazandı' : 
+                          match.winner === 'Berabere' ? '🤝 Berabere' : '❌ Kaybetti';
+            const resultColor = match.winner === playerName ? '#28a745' : 
+                               match.winner === 'Berabere' ? '#ffc107' : '#dc3545';
+            tbody.innerHTML += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">${match.opponent}</td>
+                    <td style="padding: 12px; text-align: center;">${match.score}</td>
+                    <td style="padding: 12px; text-align: center;">${match.time}dk</td>
+                    <td style="padding: 12px; text-align: center; color: ${resultColor}; font-weight: bold;">${result}</td>
+                </tr>
+            `;
+        });
+    }
+    
+    showUpcomingMatches(playerName);
+}
+
+function getPlayerMatches(playerName) {
+    const playerMatches = [];
+    matches.forEach(matchStr => {
+        const match = matchStr.match(/⏱ (.+) \((\d+)\) - \((\d+)\) (.+) \| (\d+)dk/);
+        if (match) {
+            const [, p1, score1, score2, p2, time] = match;
+            
+            if (p1 === playerName || p2 === playerName) {
+                const opponent = p1 === playerName ? p2 : p1;
+                const playerScore = p1 === playerName ? score1 : score2;
+                const opponentScore = p1 === playerName ? score2 : score1;
+                const winner = parseInt(playerScore) > parseInt(opponentScore) ? playerName : 
+                              parseInt(playerScore) < parseInt(opponentScore) ? opponent : 'Berabere';
+                
+                playerMatches.push({
+                    opponent,
+                    score: `${playerScore}-${opponentScore}`,
+                    time,
+                    winner
+                });
+            }
+        }
+    });
+    return playerMatches.reverse();
+}
+
+function showUpcomingMatches(playerName) {
+    const playedOpponents = getPlayerMatches(playerName).map(m => m.opponent);
+    const upcomingOpponents = players.filter(p => p.name !== playerName && !playedOpponents.includes(p.name));
+    
+    const upcomingList = document.getElementById('upcomingList');
+    if (upcomingOpponents.length === 0) {
+        upcomingList.innerHTML = '✅ Tüm oyuncularla maç yaptı!';
+    } else {
+        upcomingList.innerHTML = upcomingOpponents.map(p => `<span style="display: inline-block; background: white; padding: 5px 10px; margin: 3px; border-radius: 15px; border: 1px solid #D2691E;">${p.name}</span>`).join('');
+    }
+}
+</script>
+</body>
+</html>

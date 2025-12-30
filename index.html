@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 Admin Panel - Turnuva Yönetimi</title>
+    <title>🏆 DeVe Modern Tavla Turnuvası - Admin</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,14 +12,17 @@
 
 <div class="container">
     <div class="header">
-        <h1>🏆 ADMİN PANELİ</h1>
-        <p>Turnuva Yönetim Sistemi</p>
+        <h1>
+            <div class="logo"><img src="logo.png" alt="DeVe Logo"></div>
+            DeVe Modern Tavla Turnuvası
+        </h1>
+        <p>Admin Paneli</p>
     </div>
 
     <div class="tabs">
         <button class="tab-btn active" id="tab-puan">📊 PUAN DURUMU</button>
-        <button class="tab-btn" id="tab-mac">⚽ MAÇ GİRİŞİ</button>
-        <button class="tab-btn" id="tab-ayar">⚙️ AYARLAR</button>
+        <button class="tab-btn" id="tab-mac">🎲 MAÇ GİRİŞİ</button>
+        <button class="tab-btn" id="tab-ayar">👤 OYUNCU EKLEME</button>
     </div>
 
     <div class="content">
@@ -32,8 +35,8 @@
                         <th>Oyuncu</th>
                         <th>Oynanan</th>
                         <th>Puan</th>
+                        <th>Ort. Süre</th>
                         <th>Averaj</th>
-                        <th>Süre (dk)</th>
                     </tr>
                 </thead>
                 <tbody id="leaderboardBody">
@@ -177,9 +180,9 @@ window.addEventListener('DOMContentLoaded', () => {
         p1.totalTime += time; p2.totalTime += time;
         p1.average += (s1 - s2); p2.average += (s2 - s1);
 
-        if (s1 > s2) { p1.wins++; p1.points += 3; } 
-        else if (s2 > s1) { p2.wins++; p2.points += 3; } 
-        else { p1.points += 1; p2.points += 1; }
+        if (s1 > s2) { p1.wins++; p1.points += 3; p2.points += 1; } 
+        else if (s2 > s1) { p2.wins++; p2.points += 3; p1.points += 1; } 
+        else { p1.points += 2; p2.points += 2; }
 
         matches.unshift(`⏱ ${p1.name} (${s1}) - (${s2}) ${p2.name} | ${time}dk`);
         document.getElementById('score1').value = '';
@@ -199,6 +202,9 @@ window.addEventListener('DOMContentLoaded', () => {
 function renderLeaderboard() {
     players.sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
+        const avgA = a.played > 0 ? a.totalTime / a.played : 0;
+        const avgB = b.played > 0 ? b.totalTime / b.played : 0;
+        if (avgA !== avgB) return avgA - avgB;
         if (b.average !== a.average) return b.average - a.average;
         return a.totalTime - b.totalTime;
     });
@@ -206,7 +212,8 @@ function renderLeaderboard() {
     tbody.innerHTML = '';
     players.forEach((p, index) => {
         let rowClass = index === 0 ? 'rank-1' : '';
-        tbody.innerHTML += `<tr class="${rowClass}"><td>${index + 1}</td><td style="font-weight:bold">${p.name}</td><td>${p.played}</td><td>${p.points}</td><td>${p.average > 0 ? '+' + p.average : p.average}</td><td>${p.totalTime}</td></tr>`;
+        const avgTime = p.played > 0 ? (p.totalTime / p.played).toFixed(1) : '0';
+        tbody.innerHTML += `<tr class="${rowClass}"><td>${index + 1}</td><td style="font-weight:bold">${p.name}</td><td>${p.played}</td><td>${p.points}</td><td>${avgTime}dk</td><td>${p.average > 0 ? '+' + p.average : p.average}</td></tr>`;
     });
 }
 

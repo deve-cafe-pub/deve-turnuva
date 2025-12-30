@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 Turnuva Puan Durumu</title>
+    <title>🏆 DeVe Modern Tavla Turnuvası</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,8 +12,14 @@
 
 <div class="container">
     <div class="header">
-        <h1>🏆 TURNUVA PUAN DURUMU</h1>
-        <p>Canlı Sıralama</p>
+        <h1>
+            <div class="logo"><img src="logo.png" alt="DeVe Logo"></div>
+            DeVe Modern Tavla Turnuvası
+        </h1>
+        <p>
+            <span class="live-indicator"></span>
+            Canlı Sıralama
+        </p>
     </div>
 
     <div class="tab-content active" style="padding: 40px;">
@@ -23,22 +29,46 @@
             <div class="podium-place podium-2">
                 <div class="podium-rank">2</div>
                 <div class="podium-name" id="second-name">-</div>
-                <div class="podium-points" id="second-points">0 Puan</div>
             </div>
             <div class="podium-place podium-1">
                 <div class="podium-rank">1</div>
                 <div class="podium-name" id="first-name">-</div>
-                <div class="podium-points" id="first-points">0 Puan</div>
             </div>
             <div class="podium-place podium-3">
                 <div class="podium-rank">3</div>
                 <div class="podium-name" id="third-name">-</div>
-                <div class="podium-points" id="third-points">0 Puan</div>
             </div>
         </div>
 
-        <h2 style="text-align: center; margin-top: 50px; margin-bottom: 20px;">⚽ SON 10 MAÇ</h2>
-        <ul id="matchHistory" style="max-width: 800px; margin: 0 auto;"></ul>
+        <div style="text-align: center; margin-top: 50px;">
+            <button id="playerSelectBtn" class="btn" style="margin-bottom: 20px;">👤 Katılımcı Seç</button>
+        </div>
+
+        <div id="playerSelectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; padding: 20px; box-sizing: border-box;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto;">
+                <h3 style="text-align: center; margin-bottom: 20px; font-size: 1.2em;">Katılımcı Seçin</h3>
+                <div id="playerList"></div>
+                <button onclick="closePlayerModal()" style="margin-top: 15px; width: 100%; padding: 12px; background: #8B4513; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Kapat</button>
+            </div>
+        </div>
+
+        <h2 style="text-align: center; margin-top: 50px; margin-bottom: 20px;">🎲 SKOR TABLOSU</h2>
+        <div style="max-width: 800px; margin: 0 auto;">
+            <table id="fullLeaderboard" style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #8B4513; color: white;">
+                        <th style="padding: 12px; text-align: center;">Sıra</th>
+                        <th style="padding: 12px; text-align: left;">Oyuncu</th>
+                        <th style="padding: 12px; text-align: center;">Oynanan</th>
+                        <th style="padding: 12px; text-align: center;">Puan</th>
+                        <th style="padding: 12px; text-align: center;">Ort. Süre</th>
+                        <th style="padding: 12px; text-align: center;">Averaj</th>
+                    </tr>
+                </thead>
+                <tbody id="fullLeaderboardBody">
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -71,32 +101,71 @@ onValue(dbRef, (snapshot) => {
         players = data.players || [];
         matches = data.matches || [];
         renderPodium();
-        renderMatchHistory();
+        renderFullLeaderboard();
     }
 });
+
+document.getElementById('playerSelectBtn').onclick = () => {
+    document.getElementById('playerSelectModal').style.display = 'block';
+    renderPlayerList();
+};
+
+window.closePlayerModal = () => {
+    document.getElementById('playerSelectModal').style.display = 'none';
+};
+
+window.selectPlayer = (playerName) => {
+    closePlayerModal();
+    window.open(`player-stats.html?player=${encodeURIComponent(playerName)}`, '_blank', 'width=1000,height=700,scrollbars=yes,resizable=yes');
+};
+
+function renderPlayerList() {
+    const list = document.getElementById('playerList');
+    list.innerHTML = '';
+    players.forEach(player => {
+        list.innerHTML += `
+            <div onclick="selectPlayer('${player.name}')" style="padding: 10px; margin: 5px 0; background: #F5DEB3; border-radius: 8px; cursor: pointer; text-align: center; transition: background 0.2s;" onmouseover="this.style.background='#DEB887'" onmouseout="this.style.background='#F5DEB3'">
+                ${player.name}
+            </div>
+        `;
+    });
+}
 
 function renderPodium() {
     players.sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
+        const avgA = a.played > 0 ? a.totalTime / a.played : 0;
+        const avgB = b.played > 0 ? b.totalTime / b.played : 0;
+        if (avgA !== avgB) return avgA - avgB;
         if (b.average !== a.average) return b.average - a.average;
         return a.totalTime - b.totalTime;
     });
     document.getElementById('first-name').textContent = players[0]?.name || '-';
-    document.getElementById('first-points').textContent = players[0] ? `${players[0].points} Puan` : '0 Puan';
     document.getElementById('second-name').textContent = players[1]?.name || '-';
-    document.getElementById('second-points').textContent = players[1] ? `${players[1].points} Puan` : '0 Puan';
     document.getElementById('third-name').textContent = players[2]?.name || '-';
-    document.getElementById('third-points').textContent = players[2] ? `${players[2].points} Puan` : '0 Puan';
 }
 
-function renderMatchHistory() {
-    const list = document.getElementById('matchHistory');
-    list.innerHTML = '';
-    if (matches.length === 0) {
-        list.innerHTML = '<li style="text-align:center; color:#999;">Henüz maç yok</li>';
+function renderFullLeaderboard() {
+    const tbody = document.getElementById('fullLeaderboardBody');
+    tbody.innerHTML = '';
+    if (players.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">Henüz oyuncu yok</td></tr>';
         return;
     }
-    matches.slice(0, 10).forEach(m => { list.innerHTML += `<li>${m}</li>`; });
+    players.forEach((p, index) => {
+        const rowClass = index === 0 ? 'background: #FFD700;' : index === 1 ? 'background: #C0C0C0;' : index === 2 ? 'background: #CD7F32;' : '';
+        const avgTime = p.played > 0 ? (p.totalTime / p.played).toFixed(1) : '0';
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #eee; ${rowClass}">
+                <td style="padding: 12px; text-align: center; font-weight: bold;">${index + 1}</td>
+                <td style="padding: 12px; font-weight: bold;">${p.name}</td>
+                <td style="padding: 12px; text-align: center;">${p.played}</td>
+                <td style="padding: 12px; text-align: center; font-weight: bold;">${p.points}</td>
+                <td style="padding: 12px; text-align: center;">${avgTime}dk</td>
+                <td style="padding: 12px; text-align: center;">${p.average > 0 ? '+' + p.average : p.average}</td>
+            </tr>
+        `;
+    });
 }
 </script>
 </body>

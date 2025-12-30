@@ -101,11 +101,11 @@ window.addEventListener('DOMContentLoaded', () => {
         p1.average += (s1 - s2); p2.average += (s2 - s1);
 
         if (s1 > s2) { 
-            p1.wins++; p1.points += 3; 
+            p1.wins++; p1.points += 3; p2.points += 1;
         } else if (s2 > s1) { 
-            p2.wins++; p2.points += 3; 
+            p2.wins++; p2.points += 3; p1.points += 1;
         } else {
-            p1.points += 1; p2.points += 1;
+            p1.points += 2; p2.points += 2;
         }
 
         matches.unshift(`⏱ ${p1.name} (${s1}) - (${s2}) ${p2.name} | ${time}dk`);
@@ -130,6 +130,9 @@ window.addEventListener('DOMContentLoaded', () => {
 function renderLeaderboard() {
     players.sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
+        const avgA = a.played > 0 ? a.totalTime / a.played : 0;
+        const avgB = b.played > 0 ? b.totalTime / b.played : 0;
+        if (avgA !== avgB) return avgA - avgB; // Düşük averaj daha iyi
         if (b.average !== a.average) return b.average - a.average;
         return a.totalTime - b.totalTime;
     });
@@ -138,14 +141,15 @@ function renderLeaderboard() {
     tbody.innerHTML = '';
     players.forEach((p, index) => {
         let rowClass = index === 0 ? 'rank-1' : '';
+        const avgTime = p.played > 0 ? (p.totalTime / p.played).toFixed(1) : '0';
         tbody.innerHTML += `
             <tr class="${rowClass}">
                 <td>${index + 1}</td>
                 <td style="font-weight:bold">${p.name}</td>
                 <td>${p.played}</td>
                 <td>${p.points}</td>
+                <td>${avgTime}dk</td>
                 <td>${p.average > 0 ? '+' + p.average : p.average}</td>
-                <td>${p.totalTime}</td>
             </tr>`;
     });
 }
